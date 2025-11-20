@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeMatch Analyzer</title>
+    <title>CODE-COMP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -564,8 +564,8 @@
 </head>
 <body>
     <header>
-        <h1><i class="fas fa-code-compare"></i>CodeMatch Analyzer</h1>
-        <p>Crack the Code, Fix the Fault</p>
+        <h1><i class="fas fa-code-compare"></i> CODE-COMP</h1>
+        
     </header>
     
     <main>
@@ -652,9 +652,9 @@
         </div>
     </main>
     
-<!--     <footer>
-        <p><i class="fas fa-code"></i> Code Comparison Tool | Centre for Professional Enhancement | TechGem Sphere Club</p>
-    </footer> -->
+    <footer>
+        <p><i class="fas fa-code"></i> CODE-COMP | TechGem Sphere Club</p>
+    </footer>
     
     <script>
         const codeTemplates = {
@@ -958,123 +958,125 @@ int main() {
         };
 
         function clearCode(id) {
-            document.getElementById(id).value = '';
+        document.getElementById(id).value = '';
+    }
+
+    function clearAll() {
+        clearCode('reference-code');
+        clearCode('participant-code');
+        document.getElementById('diff-display').innerHTML = 'No comparison performed yet.';
+        document.getElementById('match-percentage').textContent = '--%';
+        document.getElementById('missing-lines').textContent = '0';
+        document.getElementById('extra-lines').textContent = '0';
+        document.getElementById('changed-lines').textContent = '0';
+    }
+
+    function compareCode() {
+        const referenceCode = document.getElementById('reference-code').value.trim();
+        const participantCode = document.getElementById('participant-code').value.trim();
+
+        if (!referenceCode || !participantCode) {
+            alert('Please enter both the reference and participant code.');
+            return;
         }
 
-        
+        const refLines = referenceCode.split('\n');
+        const partLines = participantCode.split('\n');
 
-        function clearAll() {
-            clearCode('reference-code');
-            clearCode('participant-code');
-            document.getElementById('diff-display').innerHTML = 'No comparison performed yet.';
-            document.getElementById('match-percentage').textContent = '--%';
-            document.getElementById('missing-lines').textContent = '0';
-            document.getElementById('extra-lines').textContent = '0';
-            document.getElementById('changed-lines').textContent = '0';
+        const diff = lcsDiff(refLines, partLines);
+
+        let missing = 0, extra = 0, changed = 0, matched = 0;
+        let diffHtml = '<div class="code-comparison">';
+
+        diff.forEach(entry => {
+            if (entry.type === 'match') {
+                diffHtml += `<span class="code-line">${escapeHtml(entry.line)}</span>`;
+                matched++;
+            } else if (entry.type === 'missing') {
+                diffHtml += `<span class="code-line missing">- ${escapeHtml(entry.line)}</span>`;
+                missing++;
+            } else if (entry.type === 'extra') {
+                extra++;
+            }
+        });
+
+        diffHtml += '</div>';
+
+        changed = Math.min(missing, extra);
+
+        const totalLines = Math.max(refLines.length, partLines.length);
+        const totalDiffs = missing + extra + changed;
+        const matchPercentage = totalLines > 0
+            ? Math.round(((totalLines - totalDiffs) / totalLines) * 100)
+            : 0;
+
+        document.getElementById('diff-display').innerHTML = diffHtml;
+        document.getElementById('match-percentage').textContent = `${matchPercentage}%`;
+        document.getElementById('missing-lines').textContent = missing;
+        document.getElementById('extra-lines').textContent = extra;
+        document.getElementById('changed-lines').textContent = changed;
+    }
+
+    function lcsDiff(a, b) {
+        const n = a.length, m = b.length;
+        const dp = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+
+        for (let i = 1; i <= n; i++) {
+            for (let j = 1; j <= m; j++) {
+                if (a[i - 1].trim() === b[j - 1].trim())
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                else
+                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+            }
         }
 
-        function compareCode() {
-            const referenceCode = document.getElementById('reference-code').value.trim();
-            const participantCode = document.getElementById('participant-code').value.trim();
-            
-            if (!referenceCode || !participantCode) {
-                alert('Please enter both the reference and participant code.');
-                return;
-            }
-            
-            const referenceLines = referenceCode.split('\n');
-            const participantLines = participantCode.split('\n');
-            
-            const refProcessed = referenceLines.map(line => line.trim());
-            const partProcessed = participantLines.map(line => line.trim());
-            
-            let missingLines = 0;
-            let extraLines = 0;
-            let changedLines = 0;
-            let matchedLines = 0;
-            
-            let diffHtml = '<div class="code-comparison">';
-            
-            for (let i = 0; i < referenceLines.length; i++) {
-                const refLine = referenceLines[i];
-                const refTrimmed = refProcessed[i];
-                
-                const isPresent = partProcessed.includes(refTrimmed);
-                
-                if (!isPresent) {
-                    diffHtml += `<span class="code-line missing">${escapeHtml(refLine)}</span>`;
-                    missingLines++;
-                } else {
-                    diffHtml += `<span class="code-line">${escapeHtml(refLine)}</span>`;
-                    matchedLines++;
-                }
-            }
-            
-            diffHtml += '</div>';
-            
-            for (let i = 0; i < partProcessed.length; i++) {
-                if (!refProcessed.includes(partProcessed[i])) {
-                    extraLines++;
-                }
-            }
-            
-            for (let i = 0; i < partProcessed.length; i++) {
-                const partLine = partProcessed[i];
-                if (refProcessed.includes(partLine)) continue; 
-                
-                for (let j = 0; j < refProcessed.length; j++) {
-                    const refLine = refProcessed[j];
-                    if (isSimilar(refLine, partLine)) {
-                        changedLines++;
-                        break;
-                    }
-                }
-            }
-            
-            const totalDifferences = missingLines + extraLines + changedLines;
-            const totalLines = Math.max(referenceLines.length, participantLines.length);
-            const matchPercentage = totalLines > 0 ? Math.round(((totalLines - totalDifferences) / totalLines) * 100) : 0;
-            
-            document.getElementById('diff-display').innerHTML = diffHtml;
-            document.getElementById('match-percentage').textContent = `${matchPercentage}%`;
-            document.getElementById('missing-lines').textContent = missingLines;
-            document.getElementById('extra-lines').textContent = extraLines;
-            document.getElementById('changed-lines').textContent = changedLines;
-        }
+        let i = n, j = m;
+        const result = [];
 
-        function loadTemplate(type) {
-            if (type === 'reference') {
-                document.getElementById('reference-code').value = `// Reference Example\nfunction add(a, b) {\n    return a + b;\n}`;
-            } else if (type === 'participant') {
-                document.getElementById('sample-code').value = `// Sample Bug Example\nfunction addNumbers(x, y) {\n    return x + y;\n}`;
-            }
-        }
-        
-        function isSimilar(line1, line2) {
-            if (line1 === line2) return true;
-            
-            const stripped1 = line1.replace(/\s+/g, '');
-            const stripped2 = line2.replace(/\s+/g, '');
-            
-            if (stripped1 === stripped2) return true;
-            
-            if (stripped1.length >= stripped2.length) {
-                if (stripped1.includes(stripped2) && stripped2.length / stripped1.length >= 0.7) return true;
+        while (i > 0 && j > 0) {
+            if (a[i - 1].trim() === b[j - 1].trim()) {
+                result.unshift({ type: 'match', line: a[i - 1] });
+                i--; j--;
+            } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+                result.unshift({ type: 'missing', line: a[i - 1] });
+                i--;
             } else {
-                if (stripped2.includes(stripped1) && stripped1.length / stripped2.length >= 0.7) return true;
+                result.unshift({ type: 'extra', line: b[j - 1] });
+                j--;
             }
-            
-            return false;
         }
-        
-        function escapeHtml(text) {
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+
+        while (i > 0) {
+            result.unshift({ type: 'missing', line: a[i - 1] });
+            i--;
         }
+
+        while (j > 0) {
+            result.unshift({ type: 'extra', line: b[j - 1] });
+            j--;
+        }
+
+        return result;
+    }
+
+    function loadTemplate(type) {
+        const language = document.getElementById('language').value;
+        const template = codeTemplates[language];
+        if (type === 'reference') {
+            document.getElementById('reference-code').value = template.reference;
+        } else if (type === 'participant') {
+            document.getElementById('participant-code').value = template.participant;
+        }
+    }
+
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
     </script>
 </body>
 </html>
